@@ -94,28 +94,34 @@ nrow(USArrests) # Number of observations/records
 # Two main ways:
 # First is as it was a 2 dimensional variable.
 USArrests[1:10, c("Murder","Assault","Rape")]
-# or 
-USArrests[1:10, -"UrbanPop"]
 
-
+# You can also use the $ to get the value of a single variable from a dataset.
 USArrests$Assault # This will print the contents of that single variable
 
+# Get a numerical summary of the variable Murder, from the USArrests dataset
 summary(USArrests$Murder)
 
 # Scatter plot of urban population vs. the murder arrests 
-
-plot(x = USArrests$UrbanPop,y = USArrests$Rape)
+plot(x = USArrests$UrbanPop, y = USArrests$Rape)
 
 # Make a linear model (will dicuss this later, the point is to check the association)
-USArrest_lm <- lm(USArrests$Rape ~ USArrests$UrbanPop) # This will return a complex object, but we are only interested in the lm coefficients
+USArrest_lm <- lm(USArrests$Rape ~ USArrests$UrbanPop) # This will return a complex object, but we are only interested in the lm coefficients. Don't worry about this too much, we are going to learn linear models in a later class.
 
 abline(USArrest_lm$coefficients, lty = "dashed", col = "red") # Make a strait line be using the linear model coefficients. Linetype is dashed.
 
 ### PACKAGES
-# Packages are toolsets that will help you do much more
+# If R is a toolbox, than packages are the tools that are developed for particular functions. There are many different packages in R, but usually you only use some in a particular project. 
+# You can get these packages directly in R from a package repository in the cloud. 
+# For example, let's download a package called "swirl".
+
 install.packages("swirl") # Download a package from the main package repository (CRAN)
+
+# swirl is a great teaching tool within R about R programming. I strongly recommend checking it out.
+# To be able to use a particular tool, you need to load it (the analogue of taking it out of your toolbox)
 
 library(swirl) # Load the package to the R session
 # Follow the instructions of swirl and do the first lesson. As a homework, you can do lesson 2-7. 
-
+# To stat swirl, just type:
 swirl()
+
+# You always have to use a parentheses after the names of the functions, even if it does not have any parameters.
