@@ -1,10 +1,14 @@
-# Welcome to R 101! This kickstart tutorial is loosely based on http://alyssafrazee.com/2014/01/02/introducing-R.html
+# Welcome to R 101! This kickstart tutorial is based on http://alyssafrazee.com/2014/01/02/introducing-R.html
+
+#### INTRODUCTION TO R
 # R can be used as a calculator, so for e.g. try:
 
-21+16
+21 + 16
 
 # You will see the result of the operiation is:
 # [1] 37
+
+# By the way, you may have noticed that text that starts with "#" has a different color. These are the comments. You can have as many comment in a script as you want. The "#" Does not have to be in the beginning of the line, but everything after it will count as comment.
 
 # You can try more compex operations too:
 
@@ -91,7 +95,7 @@ nrow(USArrests) # Number of observations/records
 # First is as it was a 2 dimensional variable.
 USArrests[1:10, c("Murder","Assault","Rape")]
 # or 
-USArrests[1:10, -c("UrbanPop")]
+USArrests[1:10, -"UrbanPop"]
 
 
 USArrests$Assault # This will print the contents of that single variable
@@ -112,6 +116,6 @@ abline(USArrest_lm$coefficients, lty = "dashed", col = "red") # Make a strait li
 install.packages("swirl") # Download a package from the main package repository (CRAN)
 
 library(swirl) # Load the package to the R session
-# Follow the instructions
+# Follow the instructions of swirl and do the first lesson. As a homework, you can do lesson 2-7. 
 
 swirl()
