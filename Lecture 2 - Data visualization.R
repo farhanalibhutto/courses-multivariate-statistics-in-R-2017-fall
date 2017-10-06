@@ -64,7 +64,7 @@ plot1 # This will print the plot
 
 ggplot(data = movies) +
     aes(x = audience_score, y = critics_score, color = genre) + # Let's add color, based on genre
-    geom_point(shape = "+", aes(size = log(imdb_num_votes))) # If you want to give constant values, you don't have to use aes(). In that case, define these constants in the geom. You can use contant and variable aesthetics in the same time, but not for the same aesthetic.
+    geom_point(shape = "+", aes(size = log10(imdb_num_votes))) # If you want to give constant values, you don't have to use aes(). In that case, define these constants in the geom. You can use contant and variable aesthetics in the same time, but not for the same aesthetic.
 
 ### EXERCISES
 # Try to make a scatter plot, using different variables to explore different research questions
@@ -119,23 +119,138 @@ ggplot(data = movies) +
     aes(y = audience_score, x = mpaa_rating) +
     geom_boxplot() # Boxplot shows median and density, see explanation in slides
 
-# Boxplot
+# Violinplot (density plot like box plot)
 ggplot(data = movies) +
     aes(y = audience_score, x = mpaa_rating, fill = mpaa_rating) +
-    geom_boxplot() # Violoin plot is similar to boxplot: the wider the plot, the more data points there
+    geom_violin() # Violoin plot is similar to boxplot: the wider the plot, the more data points there
 
 # Line plot
 ggplot(data = head(movies, 20)) + # We only choose the first 20 records
     aes(y = imdb_rating, x = thtr_rel_year) +
-    geom_line() +
-    geom_point() # You can use more then just one geom. E.g. add points
+    geom_line(size = 2) +
+    geom_point(size = 5, color = "#FF0000") # You can use more then just one geom. E.g. add points
 
 
-movies %>% 
-    arrange(-imdb_rating) %>% 
-    as.data.frame() %>% 
-    head()
+# Text annotation
+ggplot(data = head(movies, 20)) + # We only choose the first 20 records
+    aes(y = imdb_rating, x = thtr_rel_year, label = title) +
+    geom_line(size = 2) +
+    geom_point(size = 5, color = "#00FF00") + # You can use more then just one geom. E.g. add points
+    geom_text()
 
+# Label is the same with a background
+ggplot(data = head(movies, 20)) + # We only choose the first 20 records
+    aes(y = imdb_rating, x = thtr_rel_year, label = title) +
+    geom_line(size = 2) +
+    geom_point(size = 5, color = "#FF0000") + # You can use more then just one geom. E.g. add points
+    geom_label()
+
+# Barplot
+ggplot(data = tail(movies, 5)) + # Use the last 5 movies
+    aes(x = title, y = imdb_rating) +
+    geom_col()
+
+# Pointrange
+ggplot(data = tail(movies, 5)) + # Use the last 5 movies
+    aes(x = title, y = imdb_rating, ymin = imdb_rating - 1, ymax = imdb_rating + 1) +
+    geom_pointrange()  
+
+# Errorbar
+ggplot(data = tail(movies, 5)) + # Use the last 5 movies
+    aes(x = title, y = imdb_rating, ymin = imdb_rating - 1, ymax = imdb_rating + 1) +
+    geom_errorbar()     
+
+# Horizontal errorbar
+ggplot(data = tail(movies, 5)) + # Use the last 5 movies
+    aes(y = title, x = imdb_rating, xmin = imdb_rating - 1, xmax = imdb_rating + 1) +
+    geom_errorbarh(height = .5)   
+
+### Statistical transformations 
+# ggplot can automatically also transform your data, which means it puts in a summarised format so you can plot it directly
+
+# Bar plot of the number of movies in each category. You don't have to specify y, as it will be the calculated count. Aggregating and summarising data may help to understand, but inevitably causes data loss
+ggplot(data = movies) +
+    aes(x = genre) +
+    geom_bar()
+
+# Adds a non-linear trendline and standard error as default
+ggplot(data = movies) +
+    aes(x = thtr_rel_year, y = imdb_num_votes) +
+    geom_smooth()
+
+# You can also add a linear model trend ("lm"), and remove the standad error
+ggplot(data = movies) +
+    aes(x = thtr_rel_year, y = imdb_num_votes) +
+    geom_smooth(method = "lm", se = FALSE)
+
+### Position
+# Make a stacked bar chart that shows absolute counts
+ggplot(data = movies) +
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "stack")
+
+# You can also make the plot proportional
+ggplot(data = movies) +
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "fill")
+
+# Or present the count next to each other, so everything is comparable
+ggplot(data = movies) +
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "dodge")
+
+### Coordinate systems
+# Flip x and y
+ggplot(data = movies) +
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "dodge") +
+    coord_flip()
+
+# Polar plot
+ggplot(data = movies) +
+    aes(x = genre, group = critics_rating, fill = critics_rating) +
+    geom_bar(position = "fill") +
+    coord_polar()
+
+# Mapping (only briefly)
+world_map <- map_data("world") # Load map data
+
+ggplot(world_map %>% dplyr::mutate(country = ifelse(region == "Hungary", "Hungary", "Not Hungary"))) +
+    aes(long, lat, group = group, fill = country) +
+    geom_polygon()
+
+### Themes
+# There are several themes other than the default
+# Try adding these to any plot
+theme_bw()
+theme_light()
+theme_minimal()
+
+### Scales
+# Continuous scale
+ggplot(data = movies) +
+    aes(y = genre, x = thtr_rel_month) +
+    geom_point(size = 3) +
+    scale_x_continuous(breaks = 1:12, minor_breaks = 0)
+
+# Discrete scale
+ggplot(data = movies) +
+    aes(x = genre, y = thtr_rel_month) +
+    geom_point(size = 3) +
+    coord_flip() +
+    scale_y_discrete()
+
+# You can set the scale for several aesthetics, such as fill or color
+ggplot(data = movies) +
+    aes(x = genre, y = thtr_rel_month) +
+    geom_point(size = 3) +
+    coord_flip()
+
+### Save your plot
+# Put your plot into a variable ( <- ), than 
+# ggsave(<VARIABLE NAME>, "<FILENAME>")
+# If you don't specify variable name, then the last plotted object will be saved
+ggsave("film_plot_1.jpg")
 
 
 
