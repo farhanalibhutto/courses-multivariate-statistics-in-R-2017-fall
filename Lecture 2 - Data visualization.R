@@ -1,5 +1,5 @@
-# Data visualization
-# Quick tutorial for R Studio
+### Lecture 2
+# Quick tutorial for R Studio and how to use scripts
 
 x <- 127:987
 x_mean <- mean(x)
@@ -22,21 +22,16 @@ scale(x) # Both centers and scales. You don't have to use parameters, as centeri
 scale(x, center = TRUE, scale = FALSE) # Only centers
 scale(x, center = FALSE, scale = T) # Only scales (mind that you can abbreviate TRUE to T, but this is case sensitive!)
 
-
-# Summary tables
-# Most common plots, and how to understand them (scatter plot/bin plot, histogram/density plot, time series plot, bar plot, pie/tile chart, area plot/stacked bar chart, box/violin plot, heatmap, connectivity plot, geoplot, surface plot)
-# Reporting data
-# Infographics, data journalism and graphic storytelling
-
+### Data visualization
 library(ggplot2) # Load the package that we will use for visualization
 
-# Load the data from the internet
+# Load the movie data from the internet
 # We can read a data frame from a file or directly from the internet.
 # As this file is an R data object, reading it instantly adds it to the environment
 load(url("https://stat.duke.edu/~mc301/data/movies.Rdata"))
 
-# Alternatively, you can download the data file, and read it from your hard drive. But in this case, you need to assign it to a variable
-movies <- read.csv("datasets/movies.csv") # Don't forget to specify the path of the file!
+# Alternatively, you can download the data file, and read it from your hard drive.
+load("movies.Rdata") # Don't forget to specify the path of the file!
 
 # You can learn what is your current working dirctory:
 getwd()
@@ -48,7 +43,7 @@ movies
 # Also, you can check the data in a scrollable way in the upper right corner, when clicking on the "movies" text. Btw, this is the same as typing `View(movies)` in the consol (mind the capital V).
 
 head(movies) # This shows the first 5 rows of the dataset
-
+library(ggplo2)
 # So, how much the audience and critics score agree?
 ggplot(data = movies) + # Call the plotting, define the dataset # Elements can be added to a plot using `+`
     aes(x = audience_score, y = critics_score) + # Define aesthetics, that have a variable value
@@ -71,7 +66,6 @@ ggplot(data = movies) +
 # Option 1: Is there any yearly seasonality in movie genres? Are there movie genres that are not featured in certain months?
 # Option 2: Do films get longer on average over time? Also highlight the films that are longer than 3 hours!
 # Option 3: Is there an association between the number of votes and rating? Also check if title type is relevant in this question!
-
 
 # Option 1 Solution
 ggplot(data = movies) +
@@ -103,7 +97,6 @@ ggplot(data = movies) +
     facet_grid(title_type ~ critics_rating)
 
 ### More geoms
-
 # A simple histogram
 ggplot(data = movies) +
     aes(x = runtime) +
@@ -129,7 +122,6 @@ ggplot(data = head(movies, 20)) + # We only choose the first 20 records
     aes(y = imdb_rating, x = thtr_rel_year) +
     geom_line(size = 2) +
     geom_point(size = 5, color = "#FF0000") # You can use more then just one geom. E.g. add points
-
 
 # Text annotation
 ggplot(data = head(movies, 20)) + # We only choose the first 20 records
@@ -166,7 +158,7 @@ ggplot(data = tail(movies, 5)) + # Use the last 5 movies
     geom_errorbarh(height = .5)   
 
 ### Statistical transformations 
-# ggplot can automatically also transform your data, which means it puts in a summarised format so you can plot it directly
+# ggplot can automatically  transform your data, which means it puts in a summarised format so you can plot it directly
 
 # Bar plot of the number of movies in each category. You don't have to specify y, as it will be the calculated count. Aggregating and summarising data may help to understand, but inevitably causes data loss
 ggplot(data = movies) +
@@ -182,6 +174,12 @@ ggplot(data = movies) +
 ggplot(data = movies) +
     aes(x = thtr_rel_year, y = imdb_num_votes) +
     geom_smooth(method = "lm", se = FALSE)
+
+# Hexplot clusters the data and and shows thedensity data points as color gradient
+ggplot(data = movies) +
+    aes(x = critics_score, y = audience_score) +
+    geom_hex()
+
 
 ### Position
 # Make a stacked bar chart that shows absolute counts
@@ -199,6 +197,11 @@ ggplot(data = movies) +
     aes(x = genre, group = critics_rating, fill = critics_rating) +
     geom_bar(position = "dodge")
 
+# Position jitter slightly scatters the data points so they become more visible. Scattering is random
+ggplot(data = movies) +
+    aes(x = genre, y = audience_score) +
+    geom_point(position = "jitter")
+
 ### Coordinate systems
 # Flip x and y
 ggplot(data = movies) +
@@ -215,16 +218,16 @@ ggplot(data = movies) +
 # Mapping (only briefly)
 world_map <- map_data("world") # Load map data
 
-ggplot(world_map %>% dplyr::mutate(country = ifelse(region == "Hungary", "Hungary", "Not Hungary"))) +
+ggplot(dplyr::mutate(world_map, country = ifelse(region == "Hungary", "Hungary", "Not Hungary"))) + # This is a bit more advanced stuff that we will cover next class, don't worry
     aes(long, lat, group = group, fill = country) +
     geom_polygon()
 
 ### Themes
 # There are several themes other than the default
-# Try adding these to any plot
-theme_bw()
-theme_light()
-theme_minimal()
+# Try adding these to any plot!
+plot1 + theme_minimal()
+plot1 + theme_light()
+plot1 + theme_dark()
 
 ### Scales
 # Continuous scale
