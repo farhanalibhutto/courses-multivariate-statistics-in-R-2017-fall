@@ -38,6 +38,11 @@ load(url("https://stat.duke.edu/~mc301/data/movies.Rdata"))
 # Alternatively, you can download the data file, and read it from your hard drive. But in this case, you need to assign it to a variable
 movies <- read.csv("datasets/movies.csv") # Don't forget to specify the path of the file!
 
+# You can learn what is your current working dirctory:
+getwd()
+# You can also set your working directory like this. However, this is on my own computer, so this path will not work, it is only an example for the use of the setwd() function
+setwd("D:/Documents/GitHub/courses/2017 fall/Multivariate statistics in R")
+
 # Checking the data
 movies
 # Also, you can check the data in a scrollable way in the upper right corner, when clicking on the "movies" text. Btw, this is the same as typing `View(movies)` in the consol (mind the capital V).
@@ -61,19 +66,75 @@ ggplot(data = movies) +
     aes(x = audience_score, y = critics_score, color = genre) + # Let's add color, based on genre
     geom_point(shape = "+", aes(size = log(imdb_num_votes))) # If you want to give constant values, you don't have to use aes(). In that case, define these constants in the geom. You can use contant and variable aesthetics in the same time, but not for the same aesthetic.
 
+### EXERCISES
+# Try to make a scatter plot, using different variables to explore different research questions
+# Option 1: Is there any yearly seasonality in movie genres? Are there movie genres that are not featured in certain months?
+# Option 2: Do films get longer on average over time? Also highlight the films that are longer than 3 hours!
+# Option 3: Is there an association between the number of votes and rating? Also check if title type is relevant in this question!
+
+
+# Option 1 Solution
+ggplot(data = movies) +
+    aes(y = genre, x = thtr_rel_month) +
+    geom_point(size = 3) #+
+    #scale_x_continuous(breaks = 1:12, minor_breaks = 0) # The x axis is ugly, we will learn how to fix it later
+    
+# Option 2 Solution
+ggplot(data = movies) +
+    aes(y = runtime, x = thtr_rel_year, color = runtime > 180) +
+    geom_point(size = 2)
+
+# Option 3 Solution
+ggplot(data = movies) +
+    aes(y = imdb_rating, x = imdb_num_votes, shape = title_type, color = title_type) +
+    geom_point(size = 2.5)
+
+### Facets
+# Facets are separate panels that may help to discover trends in the data
+ggplot(data = movies) +
+    aes(y = imdb_rating, x = imdb_num_votes) +
+    geom_point(size = 2) +
+    facet_wrap(~title_type) # Mind that you have to put a ~ before the variable.
+
+# You can also use two variables for faceting as rows and columns
+ggplot(data = movies) +
+    aes(y = imdb_rating, x = runtime) +
+    geom_point() +
+    facet_grid(title_type ~ critics_rating)
+
+### More geoms
+
+# A simple histogram
+ggplot(data = movies) +
+    aes(x = runtime) +
+    geom_histogram()
+
+# Density plot
+ggplot(data = movies) +
+    aes(x = runtime, group = title_type, fill = title_type) +
+    geom_density(alpha = .5) # Alpha sets opacity. It can be a value between 0-1
+
+# Boxplot
+ggplot(data = movies) +
+    aes(y = audience_score, x = mpaa_rating) +
+    geom_boxplot() # Boxplot shows median and density, see explanation in slides
+
+# Boxplot
+ggplot(data = movies) +
+    aes(y = audience_score, x = mpaa_rating, fill = mpaa_rating) +
+    geom_boxplot() # Violoin plot is similar to boxplot: the wider the plot, the more data points there
+
+# Line plot
+ggplot(data = head(movies, 20)) + # We only choose the first 20 records
+    aes(y = imdb_rating, x = thtr_rel_year) +
+    geom_line() +
+    geom_point() # You can use more then just one geom. E.g. add points
 
 
 movies %>% 
     arrange(-imdb_rating) %>% 
     as.data.frame() %>% 
     head()
-
-
-
-
-
-
-
 
 
 
