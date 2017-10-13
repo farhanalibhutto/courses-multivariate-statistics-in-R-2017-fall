@@ -71,12 +71,103 @@ gapminder <- gapminder::gapminder
 # It is in tidy format. Check the codebook
 ?gapminder::gapminder
 
-# Task:
-gapminder %>% 
-    filter(year == c(1952, 1957)) %>% 
+# Task 1 solution
+solution_1 <-
+    gapminder %>% 
+    filter(year == c(1952, 1957)) %>%
     group_by(continent) %>% 
     summarise(life_exp_med = median(lifeExp)) %>% 
     arrange(-life_exp_med)
+
+# Task 1 data viz   
+library(ggplot2)
+solution_1 %>% 
+    ggplot() +
+        aes(x = continent, y = life_exp_med) +
+        geom_col()
+
+
+# Task 2 solution
+solution_2 <-
+    gapminder %>% 
+    filter(country %in% c("Hungary","Slovak Republic","Austria")) %>% 
+    group_by(country) %>% 
+    mutate(mean_pop = mean(pop),
+           cent_pop = pop - mean_pop)
+
+solution_2 %>% 
+    ggplot() +
+        aes(x = year, y = cent_pop, group = country, color = country) +
+        geom_line(size = 1.5) +
+        geom_hline(yintercept = 0) +
+        scale_y_continuous()
     
 
+# Tidy data
+library(tidyr)
 
+# We will use the who data from the tidyr package
+# Check the codebook
+data(who)
+?who
+# gather arranges data to long format
+# you have to give a name that will store
+
+who_long <- 
+    who %>% 
+    gather(variable, value, new_sp_m014:newrel_f65)
+
+# You can see a lot of missing values (NA) that you can easily remove
+who_long <- 
+    who_long %>% 
+    drop_na(value)
+
+# According to the codebook, there are several things encoded in these variables, that is not tidy
+# For example, ˙new_` in the vairable name does not contain information, so let's remove it
+# To make operations on strings, let's use the stringr package, also from the tidyverse
+
+library(stringr)
+
+who_long %>% 
+    mutate(variable = str_replace(variable, "new_",""))
+    
+
+# This way, the variable contains 3 different information: test result, gender, and age
+# Let's separate the test result first
+
+who_long %>% 
+    mutate(variable = str_replace(variable, "new_","")) %>% 
+    separate(variable, c("test_result","gender_age"), sep = "_")
+
+# We still need to separate the gender from the age
+who_tidy <-
+    who_long %>% 
+    mutate(variable = str_replace(variable, "new_","")) %>% 
+    separate(variable, c("test_result","gender_age"), sep = "_") %>% 
+    mutate(gender = gender_age %>% substring(1,1),
+           age = gender_age %>% substring(2))
+
+# Now we can verify what age groups we have
+who_tidy %>% 
+    distinct(age)
+
+
+# We can also transform the data to wide format, for e.g. the age groups. 
+who_tidy %>% 
+    spread(age, value)
+
+# Load the nycflights13 dataset that contains flight information
+library(nycflights13)
+nycflights13::flights
+
+# Do the exercises in r4ds for data transformation and tidy data
+
+
+    
+    
+    
+    
+    
+    
+    
+    
