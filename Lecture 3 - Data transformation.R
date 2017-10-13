@@ -60,7 +60,7 @@ ToothGrowth %>%
 
 # We can also arrange the results based on a variable
 tooth_results %>% 
-    arrange()
+    arrange(mean_len_cm)
 
 
 # Practice on the gapminder data. First install it, than load the data 
@@ -115,7 +115,7 @@ data(who)
 
 who_long <- 
     who %>% 
-    gather(variable, value, new_sp_m014:newrel_f65)
+    gather(key = variable, value = value, new_sp_m014:newrel_f65)
 
 # You can see a lot of missing values (NA) that you can easily remove
 who_long <- 
@@ -137,13 +137,13 @@ who_long %>%
 
 who_long %>% 
     mutate(variable = str_replace(variable, "new_","")) %>% 
-    separate(variable, c("test_result","gender_age"), sep = "_")
+    separate(col = variable, into = c("test_result","gender_age"), sep = "_")
 
 # We still need to separate the gender from the age
 who_tidy <-
     who_long %>% 
     mutate(variable = str_replace(variable, "new_","")) %>% 
-    separate(variable, c("test_result","gender_age"), sep = "_") %>% 
+    separate(col = variable, into = c("test_result","gender_age"), sep = "_") %>% 
     mutate(gender = gender_age %>% substring(1,1),
            age = gender_age %>% substring(2))
 
