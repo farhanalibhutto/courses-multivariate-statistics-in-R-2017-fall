@@ -74,7 +74,7 @@ gapminder <- gapminder::gapminder
 # Task 1 solution
 solution_1 <-
     gapminder %>% 
-    filter(year == c(1952, 1957)) %>%
+    filter(year %in% c(1952, 1957)) %>%
     group_by(continent) %>% 
     summarise(life_exp_med = median(lifeExp)) %>% 
     arrange(-life_exp_med)
@@ -151,22 +151,11 @@ who_tidy <-
 who_tidy %>% 
     distinct(age)
 
-
 # We can also transform the data to wide format, for e.g. the age groups. 
 who_tidy %>% 
     spread(age, value)
 
-# Load the nycflights13 dataset that contains flight information
-library(nycflights13)
-nycflights13::flights
 
-# Do the exercises in r4ds for data transformation and tidy data
-
-
-    
-    
-    
-    
     
     
     
