@@ -30,10 +30,10 @@ titanic_train %>% select(ends_with("e"))
 titanic_train %>% select(-contains("ar")) 
 
 # If you want to select a variable that is not in the dataset, you will get an error
-titanic_train %>% select(Ticket, Cabin, Embarked) 
+titanic_train %>% select(Ticket, Gender, Embarked) 
 
-# But with a helper function, you can safely look for a variable, it will not result an error
-titanic_data %>% select(one_of("Ticket", "Cabin", "Embarked"))
+# But with a helper function, you can safely look for a variable, it will not result an error (only a warning)
+titanic_train %>% select(one_of("Ticket", "Gender", "Embarked"))
 
 # Using select to rename variables
 titanic_train %>% select(id = 1, name = 4, gender = 5)
@@ -51,12 +51,12 @@ titanic_train %>% select(var_ = starts_with("P"), everything())
 
 ### PRACTICE ON TITANIC DATA
 # Solution for Titanic question 2
-titanic_df %>% 
+titanic_train %>% 
     group_by(Pclass, Sex, Survived) %>% 
     ggplot() +
-    aes(x = Pclass %>% as.factor(), fill = Sex) +
-    geom_bar(position = "dodge") +
-    facet_wrap(~Survived)
+        aes(x = Pclass %>% as.factor(), fill = Sex) +
+        geom_bar(position = "dodge") +
+        facet_wrap(~Survived)
 
 # Solution for Titanic question 3
 titanic_df <-
@@ -70,7 +70,4 @@ titanic_df <-
     ungroup()
 
 
-ggplot(titanic_train) +
-    aes(x = Age) +
-    geom_histogram(bins = 20)
 
