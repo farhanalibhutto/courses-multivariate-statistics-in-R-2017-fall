@@ -1,4 +1,4 @@
-# Lecture 4 - Select helpers, tyoes, and Hypothesis testing
+# Lecture 4 - Select helpers, types, NAs, CLT and Hypothesis testing
 library(tidyverse)
 
 # Let's use the titanic dataset
@@ -70,4 +70,7 @@ titanic_df <-
     ungroup()
 
 
+ggplot(titanic_train) +
+    aes(x = Age) +
+    geom_histogram(bins = 20)
 
