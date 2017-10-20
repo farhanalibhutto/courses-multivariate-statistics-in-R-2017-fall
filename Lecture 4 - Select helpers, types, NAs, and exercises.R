@@ -1,4 +1,4 @@
-# Lecture 4 - Select helpers, types, NAs, CLT and Hypothesis testing
+# Lecture 4 - Select helpers, types, NAs, and exercises
 library(tidyverse)
 
 # Let's use the titanic dataset
