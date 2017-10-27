@@ -1,5 +1,9 @@
 # Lecture 5 - Covariation, correlaion, linear regression
+# Load these packages
 library(tidyverse)
+library(broom)
+library(forcats)
+library(stringr)
 
 # Read the cocktail dataset from my github repo
 cocktails <- read_tsv("https://raw.github.com/nthun/cocktail-balance/master/cocktail_data.tsv")
@@ -30,10 +34,6 @@ corr_df <-
                strong_correlation = positive) %>% 
     gather(key, value, -x, -group) %>% 
     mutate(key = fct_relevel(key, "positive","negative","no_correlation","weak_correlation","moderate_correlation","strong_correlation"))
-
-# Load these packages
-library(forcats)
-library(stringr)
 
 # Plot correlations of different direction
 corr_df %>% 
@@ -78,7 +78,6 @@ cocktails %>%
         geom_text_repel() +
         facet_wrap(~property, nrow = 2, scales = "free_y")
 
-
 ## Correlation in R
 
 # The simplest way is the built in cor() function
@@ -102,12 +101,6 @@ cocktails %>%
     summarise(r = cor(x = abv, y = value) %>% round(2),
               p = cor.test(x = abv, y = value, method = "pearson")$p.value)
 
-cocktails %>% 
-    select(name:sugar) %>% 
-    # gather(property, value, -name, -abv) %>% 
-    group_by(property) %>% 
-    do(cor.test(x = abv, y = value) %>% tidy)
-
 # To get significance of the values in the matrix, we should use the psych paclage. corr.test() returns correlations, sample size, and p-values. It can also correct the significance for multipe comparisions, and calculate confidence intervals. 
 if (!require(psych)) install.packages("psych")
 library(psych)
@@ -124,8 +117,53 @@ cocktails %>%
     select(abv:sugar) %>% 
     ggpairs(lower = list(continuous = "smooth", color = "red"))
 
+## Normality assumption
+# Checking normality     
+x <- data_frame(x = rnorm(10000, 0, 1)) # generate 10,000 random numbers
+ggplot(x) + geom_histogram(aes(x))
+ggplot(x) + geom_density(aes(x), fill = "grey40")
+ggplot(x) + geom_qq(aes(sample = x))
+
+# Transform the data
+cocktails_trans <- 
+    cocktails %>% 
+    mutate(abv = abv %>% log())
+
+ggplot(cocktails_trans) + geom_histogram(aes(x = abv), bins = 20)
+ggplot(cocktails_trans) + geom_density(aes(x = abv), fill = "grey40")
+ggplot(cocktails_trans) + geom_qq(aes(sample = abv))
+
+cocktails_trans %>% 
+    pull(abv) %>% 
+    shapiro.test()
+
+# Do it on the tidyverse way
+# Use do if you don't want to cram your results into one predefined variable. This way, you will get a nested dataframe
+# Moreover, broom::tidy helps you to uniformize outputs, and put them in a data frame
+# You can also create nested data frames, in which your cells will contain data frames
+# You can unnest them using the unnest() function
+cocktails_trans %>% 
+    do(sw = shapiro.test(.$abv) %>% tidy()) %>% 
+    unnest(sw)
+
+# This methods shows its real power when you do it on several variables.
+# To do that, first you have to put your data into long format using gather()
+cocktails_trans %>% 
+    gather(key, value, abv:sugar) %>% 
+    group_by(key) %>% 
+    do(sw = shapiro.test(.$value) %>% tidy()) %>% 
+    unnest(sw)
+
+cor.test(cocktails$abv, cocktails$sugar, method = "spearman")
+
+cocktails %>% 
+    select(abv:sugar) %>% 
+    # corr.test()
+    cor.ci(method = "spearman", n.iter = 1000) # Specify number of iterations
 
 
+# Compare correlations using psych::paired.r()
+paired.r(-.47, -.67, n = 55)
 
-
-
+# If you provide n2, you can specify the sample size for the variables independently
+paired.r(-.47, -.67, n = 55, n2 = 550)
