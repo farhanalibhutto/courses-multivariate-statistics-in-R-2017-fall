@@ -110,7 +110,7 @@ cocktails %>%
 
 # Visualize correlation matrices. Best to use the GGally package.
 # By default, ggpairs() shows scatter plots (all variables by all variables), density plots, and the actual correlation values. You can also add several features, check: https://ggobi.github.io/ggally/
-if (!require(GGally)) install.packages("psych")
+if (!require(GGally)) install.packages("GGally")
 library(GGally)
 
 cocktails %>% 
@@ -133,22 +133,26 @@ ggplot(cocktails_trans) + geom_histogram(aes(x = abv), bins = 20)
 ggplot(cocktails_trans) + geom_density(aes(x = abv), fill = "grey40")
 ggplot(cocktails_trans) + geom_qq(aes(sample = abv))
 
-cocktails_trans %>% 
+cocktails %>% 
     pull(abv) %>% 
     shapiro.test()
+
+cocktails %>% 
+    select(abv:sugar) %>% 
+    cor.ci()
 
 # Do it on the tidyverse way
 # Use do if you don't want to cram your results into one predefined variable. This way, you will get a nested dataframe
 # Moreover, broom::tidy helps you to uniformize outputs, and put them in a data frame
 # You can also create nested data frames, in which your cells will contain data frames
 # You can unnest them using the unnest() function
-cocktails_trans %>% 
+cocktails %>% 
     do(sw = shapiro.test(.$abv) %>% tidy()) %>% 
     unnest(sw)
 
 # This methods shows its real power when you do it on several variables.
 # To do that, first you have to put your data into long format using gather()
-cocktails_trans %>% 
+cocktails %>% 
     gather(key, value, abv:sugar) %>% 
     group_by(key) %>% 
     do(sw = shapiro.test(.$value) %>% tidy()) %>% 
@@ -158,7 +162,6 @@ cor.test(cocktails$abv, cocktails$sugar, method = "spearman")
 
 cocktails %>% 
     select(abv:sugar) %>% 
-    # corr.test()
     cor.ci(method = "spearman", n.iter = 1000) # Specify number of iterations
 
 
@@ -167,3 +170,29 @@ paired.r(-.47, -.67, n = 55)
 
 # If you provide n2, you can specify the sample size for the variables independently
 paired.r(-.47, -.67, n = 55, n2 = 550)
+
+### LISTS
+a <- list(a = 1:3, b = "a string", c = pi, d = list(-1, -5))
+
+# Indexing a list can be a bit difficult first. There are 3 ways of subsetting a list
+# [ returns a sub-list. The result will always be a list
+a[1:2] %>% str()
+
+# [[ returns a single component of a list. It removes the level of hierarchy
+a[[1]] %>% str()
+a[[4]] %>% str() # This remains a list, because this was a list in a list
+
+# You can use $ as a shorthand for extracting named elements
+a$a
+# is the same as
+a[["a"]]
+
+# This can be important, because statistical tests often return results that are lists
+# for e.g. the shapiro test returns a list of 4 elements
+
+cocktails %>% 
+    pull(abv) %>% 
+    shapiro.test() %>%
+    str()
+
+
