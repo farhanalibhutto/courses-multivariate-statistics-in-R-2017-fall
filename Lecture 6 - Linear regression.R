@@ -8,6 +8,16 @@ library(broom)
 cocktails <- read_tsv("https://raw.github.com/nthun/cocktail-balance/master/cocktail_data.tsv")
 cocktails <- read_tsv("http://bit.ly/2zbj7kA") # Same stuff, but shortened url
 
+# To be able to use catagorical variables in statistical models, we may need to convert the categories to dummy variables. This means that the variable name will be the category name, and if this category is true for the observation, the value of the variable will be 1, or otherwise 0.
+# Task: create dummy coded variables in the cocktail dataset  from the type variable
+cocktails %>% distinct(type)
+dummy_cocktails <-
+    cocktails %>% 
+    mutate(value = 1) %>% # This defines what will be the spread across variables
+    spread(type, value, fill = 0) #%>% # Add fill for binary coding, otherwise it will be NA
+# select(name, blended:stirred) # Just to show the important variables, otherwise, don't use this
+
+
 # Create simple linear regression of cocktail acidity on alcohol content
 # This only returns intercept and slope
 lm(abv ~ acid, data = cocktails)
@@ -36,8 +46,7 @@ augment(acid_lm, cocktails)
 # Glimpse returns important model performance metrics.
 glance(acid_lm)
 
-# To get the standardized coefficients (scale free), you need to standardize the output and predictor variables
-# This 
+# To get the standardized coefficients (scale free), you need to standardize the output and predictor variables. Use the scale() function on all variables in the model
 acid_lm_std <- lm(scale(abv) ~ scale(acid), data = cocktails)
 summary(acid_lm_std)
 # You can check that the slope of acid now matches the correlation between abv and acid
@@ -75,6 +84,18 @@ cocktails %>%
     geom_segment(aes(xend = acid, yend = mean_abv), linetype = "dashed", color = "blue", size = 1.2) +
     geom_point(size = 3)
 
+# Improvement of the fit by using the model, compared to only using the mean
+# This plots shows the total variance of the outcome variable (summary of the blue lines)
+cocktails %>% 
+    augment(lm(abv ~ acid, data = .), .) %>% 
+    mutate(mean_abv = mean(abv)) %>% 
+    ggplot() +
+    aes(y = abv, x = acid) +
+    geom_hline(aes(yintercept = mean_abv), size = 1.5) +
+    geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "black") +
+    geom_segment(aes(xend = acid, yend = mean_abv, y = .fitted), linetype = "dashed", color = "purple", size = 1.2) +
+    geom_point(size = 2)
+
 ## Diagnostics
 # The residuals should not have an underlying pattern: they should have a normal distribution
 cocktails %>% 
@@ -90,55 +111,70 @@ cocktails %>%
     pull(.resid) %>% 
     shapiro.test(.)
 
-# Plotting the residuals vs. fitted (pedicted) values
-# This tells that there is a non-linear pattern that was not explained by the model
-augment(lm(abv ~ acid, data = cocktails), cocktails) %>% 
-    ggplot() +
-    aes(x = .fitted, y = .resid) +
-    geom_point() +
-    geom_smooth(se = FALSE)
-
-# We are actually better off to use the ggfortify package to make us diagnostic plots, using the autoplot() function
+# To explore the residuals we are actually better off to use the ggfortify package to make us diagnostic plots, using the autoplot() function
 if (!require(ggfortify)) install.packages("ggfortify")
 library(ggfortify)
+# This will plot 6 different diagnostic plots that are all useful to tell if the predicion is reliable
+# See explanation on the slides
 autoplot(acid_lm, which = 1:6, label.size = 3)
-### TODO: EXPLAIN DIAGNOSTIC PLOTS
-
+# See how to interpret diagnostic plots in slides
+# Let's store the diagnostic values in a variable
+acid_lm_diag <- augment(acid_lm, cocktails)
 
 # We can single out observations with the clice() function
-odd_cases <-
 cocktails %>% 
-    slice(c(9, 44,45))
+    slice(c(9, 41, 42, 44, 45))
 
-
-## Using categorical variables
-# To be able to use catagorical variables in statistical models, we may need to convert the categories to dummy variables. This means that the variable name will be the category name, and if this category is true for the observation, the value of the variable will be 1, or otherwise 0.
-# Task: create dummy coded variables in the cocktail dataset  from the type variable
-cocktails %>% distinct(type)
-dummy_cocktails <-
+# We can rerun the lm without cases that have zero acid
+acid_lm_clean <-
     cocktails %>% 
-    mutate(value = 1) %>% # This defines what will be the spread across variables
-    spread(type, value, fill = 0) #%>% # Add fill for binary coding, otherwise it will be NA
-    # select(name, blended:stirred) # Just to show the important variables, otherwise, don't use this
+    filter(acid != 0) %>% 
+    lm(abv ~ acid, data = .)
+summary(acid_lm_clean)
 
-# This is just the inner working of how categorical variables can be included in a linear regression model, because R does this automatically
-
-cocktail_fit_1 <- lm(abv ~ type, data = cocktails)
-summary(cocktail_fit_1)
-
-# The only thing 
-cocktail_fit_2 <- lm(abv ~ blended + built + carbonated + eggwhite + shaken + stirred, data = dummy_cocktails)
-summary(cocktail_fit_2)
+# Check diagnostics again
+autoplot(acid_lm_clean, which = 1:6)
+# We can see that the residuals are still not perfect, which makes the reliability of the model shaky
+# Dealing with diagnostics is often an iterative process, where problematic values are investigated recursive
+cocktails %>% 
+    augment(lm(abv ~ acid, data = .), .)
 
 ## MULTIPLE REGRESSION
 # Syntax for interactions
 # Add multiple predictors: <outcome variable> ~ <predictor 1> + <predictor 2>
-lm(abv ~ acid + sugar, data = cocktails) %>% summary()
+lm1 <- lm(abv ~ acid + sugar, data = cocktails)
+summary(lm1)
 # Add multiple predictors AND their interactions: <outcome variable> ~ <predictor 1> * <predictor 2>
-lm(abv ~ acid * sugar, data = cocktails) %>% summary()
+lm2 <- lm(abv ~ acid * sugar, data = cocktails)
+summary(lm2)
 # Add ONLY the interaction of predictors: <outcome variable> ~ <predictor 1> : <predictor 2>
-lm(abv ~ acid : sugar, data = cocktails) %>% summary()
+lm3 <- lm(abv ~ acid : sugar, data = cocktails)
+summary(lm3)
 # You can combine these
+# R can also deal with categorical variables, as they are automatically dummied, and the first level is taken as baseline
 lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
+# To change the baseline, convert it to random, and use the levels
+lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% summary()
 
-# Model selection
+## Model selection
+# You can compare models if you use the same data, and the same approach to get the regression line
+# There are 3 widely-used metrics, all provided in broom::glance()
+# All of them have the similar underlying principle? 
+# You should go for the smallest logLik, AIC, and BIC with the same df
+
+glance(lm1)
+glance(lm2)
+glance(lm3)
+
+# You can also compare the logLik models using the anova() function. It returns an F value, which is significant if difference.
+anova(lm1, lm2)
+# This tells us that the more complicated model is not significantly better, so we should not use it
+
+# You can have more then 2 models, and the comparison refers to the previous model.
+anova(lm1, lm2, lm3)
+
+# Based on the comparisons, there is no significant diffference. So we should choose the simplest model, that has the smallest df! It is model number 3!
+
+
+
+
