@@ -1,7 +1,6 @@
 # Lecture 6 - Linear regression
 # Load these packages
 library(tidyverse)
-library(psych)
 library(broom)
 
 # Read the cocktails dataset
@@ -142,18 +141,27 @@ cocktails %>%
 ## MULTIPLE REGRESSION
 # Syntax for interactions
 # Add multiple predictors: <outcome variable> ~ <predictor 1> + <predictor 2>
+# You can choose to get a more verbose output using the summary() function.
+
 lm1 <- lm(abv ~ acid + sugar, data = cocktails)
 summary(lm1)
+tidy(lm1)
 # Add multiple predictors AND their interactions: <outcome variable> ~ <predictor 1> * <predictor 2>
 lm2 <- lm(abv ~ acid * sugar, data = cocktails)
 summary(lm2)
+tidy(lm2)
 # Add ONLY the interaction of predictors: <outcome variable> ~ <predictor 1> : <predictor 2>
 lm3 <- lm(abv ~ acid : sugar, data = cocktails)
 summary(lm3)
+tidy(lm3)
+
+# Get the confidence intervals for parameters
+confint(lm1, level = 0.95)
 # You can combine these
 # R can also deal with categorical variables, as they are automatically dummied, and the first level is taken as baseline
 lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
-# To change the baseline, convert it to random, and use the levels
+# To change the baseline, convert it to random, and use the levels to set the baseline to carbonated
+# Use the forcats::fct_relevel() function
 lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% summary()
 
 ## Model selection
@@ -167,14 +175,34 @@ glance(lm2)
 glance(lm3)
 
 # You can also compare the logLik models using the anova() function. It returns an F value, which is significant if difference.
-anova(lm1, lm2)
+anova(lm1, lm3)
 # This tells us that the more complicated model is not significantly better, so we should not use it
 
-# You can have more then 2 models, and the comparison refers to the previous model.
+# You can have more then 2 models, and the comparison refers to the _PREVIOUS_ model (so not the baseline). Pair-wise comparisons are thus preferable
 anova(lm1, lm2, lm3)
 
 # Based on the comparisons, there is no significant diffference. So we should choose the simplest model, that has the smallest df! It is model number 3!
 
+# To report the results of regression, you have to use a table, according to APA6. To create such a table, the easiest is to use the stargazer package, that collects all information from the models, and creates a nice table.
+install.packages("stargazer")
+library(stargazer)
 
+# To get the table in the console, use the type = "text" argument.
+stargazer(lm1, lm2, title = "Results", align = TRUE, type = "text")
 
+# You can also have the table in different formats, e.g. html. If you do this, you can save the object and view the results using your web browser. We will later learn a way to include those tables to your manuscripts.
 
+results_table_html <-
+    stargazer(lm1,
+              lm2,
+              lm3,
+              title = "Model comparison",
+              dep.var.labels = "Alcohol content",
+              align = TRUE,
+              ci = TRUE,
+              df = TRUE,
+              # keep.summary.stat = c("aic","bic","ll","f","rsq","adj.rsq","n","res.dev","chi2"),
+              type = "html")
+
+# You can save the results using the write_lines() function
+write_lines(results_table_html, "results_table.html")
