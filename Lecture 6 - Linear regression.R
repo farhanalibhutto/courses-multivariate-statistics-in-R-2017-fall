@@ -120,6 +120,10 @@ autoplot(acid_lm, which = 1:6, label.size = 3)
 # Let's store the diagnostic values in a variable
 acid_lm_diag <- augment(acid_lm, cocktails)
 
+# We can also check the dfbeta and DFFit values to see how much the model changes when we remove a case
+dfbeta(acid_lm) # Change in model parameters
+dffits(acid_lm) # Change in residual
+
 # We can single out observations with the clice() function
 cocktails %>% 
     slice(c(9, 41, 42, 44, 45))
@@ -162,7 +166,25 @@ confint(lm1, level = 0.95)
 lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
 # To change the baseline, convert it to random, and use the levels to set the baseline to carbonated
 # Use the forcats::fct_relevel() function
-lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails) %>% summary()
+lm4 <- lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails)
+tidy(lm4)
+
+# Measure multicollinearity using the variance inflaction factor (VIF)
+# Values for any varible should not be larger than 10
+car::vif(lm2)
+
+# If the average VIF is larger than 1, it means that multicollineratity is biasing our model
+mean(car::vif(lm2))
+
+# We can also look at the tolerance, that is the reciprocal of VIF, where we are looking for values closer to one (tolerance has the adventage of being between 0 and 1). Values below .1 indicate serious problems, while values below .2 are somewhat troublesome
+1/car::vif(lm2)
+
+# Measuring the independence of residuals
+car::dwt(lm2)
+# It seems like model has some 
+
+
+
 
 ## Model selection
 # You can compare models if you use the same data, and the same approach to get the regression line
@@ -192,17 +214,37 @@ stargazer(lm1, lm2, title = "Results", align = TRUE, type = "text")
 
 # You can also have the table in different formats, e.g. html. If you do this, you can save the object and view the results using your web browser. We will later learn a way to include those tables to your manuscripts.
 
+# Let's also add standardized coefficients
+# We need to transform the non-standardized values using the lm.beta package
+install.packages("lm.beta")
+library(lm.beta)
+# Create standardized versions from all objects
+lm1_std <- lm.beta(lm1)
+lm2_std <- lm.beta(lm2)
+lm3_std <- lm.beta(lm3)
+lm4_std <- lm.beta(lm4)
+
+# We have to explicitly tell stargazer which coefficients we want to see
 results_table_html <-
-    stargazer(lm1,
-              lm2,
-              lm3,
+    stargazer(lm1_std,
+              lm2_std,
+              lm3_std,
+              lm4_std,
+              coef = list(lm1_std$standardized.coefficients,
+                          lm2_std$standardized.coefficients,
+                          lm3_std$standardized.coefficients,
+                          lm4_std$standardized.coefficients),
               title = "Model comparison",
               dep.var.labels = "Alcohol content",
               align = TRUE,
               ci = TRUE,
               df = TRUE,
-              # keep.summary.stat = c("aic","bic","ll","f","rsq","adj.rsq","n","res.dev","chi2"),
+              digits = 2,
               type = "html")
 
 # You can save the results using the write_lines() function
 write_lines(results_table_html, "results_table.html")
+
+
+
+
