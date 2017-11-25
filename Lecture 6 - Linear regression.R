@@ -95,7 +95,26 @@ cocktails %>%
     geom_segment(aes(xend = acid, yend = mean_abv, y = .fitted), linetype = "dashed", color = "purple", size = 1.2) +
     geom_point(size = 2)
 
-## Diagnostics
+
+
+## Checking the assumptions for linear regression
+# Measure multicollinearity using the variance inflaction factor (VIF)
+# Values for any varible should not be larger than 10
+car::vif(lm2)
+
+# If the average VIF is larger than 1, it means that multicollineratity is biasing our model
+mean(car::vif(lm2))
+
+# We can also look at the tolerance, that is the reciprocal of VIF, where we are looking for values closer to one (tolerance has the adventage of being between 0 and 1). Values below .1 indicate serious problems, while values below .2 are somewhat troublesome
+1/car::vif(lm2)
+
+# Measuring the independence of residuals
+car::dwt(lm2)
+# It seems like model has some significant autocorrelation, so the residuals are not independent
+
+# To check heteroscetasticity inspect the residual diagnostic plots
+
+## Residual diagnostics
 # The residuals should not have an underlying pattern: they should have a normal distribution
 cocktails %>% 
     augment(lm(abv ~ acid, data = .), .) %>% 
@@ -120,10 +139,6 @@ autoplot(acid_lm, which = 1:6, label.size = 3)
 # Let's store the diagnostic values in a variable
 acid_lm_diag <- augment(acid_lm, cocktails)
 
-# We can also check the dfbeta and DFFit values to see how much the model changes when we remove a case
-dfbeta(acid_lm) # Change in model parameters
-dffits(acid_lm) # Change in residual
-
 # We can single out observations with the clice() function
 cocktails %>% 
     slice(c(9, 41, 42, 44, 45))
@@ -134,13 +149,15 @@ acid_lm_clean <-
     filter(acid != 0) %>% 
     lm(abv ~ acid, data = .)
 summary(acid_lm_clean)
-
-# Check diagnostics again
+# We can check the diagnostics without the influential cases.
+# Remember, that you can only remove cases from the dataset, when you are perfectly sure that the data was not recorded correctly. You cannot simlply remove outliers becauses they don't fit your model.
 autoplot(acid_lm_clean, which = 1:6)
 # We can see that the residuals are still not perfect, which makes the reliability of the model shaky
-# Dealing with diagnostics is often an iterative process, where problematic values are investigated recursive
-cocktails %>% 
-    augment(lm(abv ~ acid, data = .), .)
+# Dealing with diagnostics is often an iterative process, where problematic values are investigated recursively
+
+# We can also check the dfbeta and DFFit values to see how much the model changes when we remove a case
+dfbeta(acid_lm) # Change in model parameters
+dffits(acid_lm) # Change in residual
 
 ## MULTIPLE REGRESSION
 # Syntax for interactions
@@ -163,28 +180,11 @@ tidy(lm3)
 confint(lm1, level = 0.95)
 # You can combine these
 # R can also deal with categorical variables, as they are automatically dummied, and the first level is taken as baseline
-lm(abv ~ acid : sugar + type, data = cocktails) %>% summary()
+lm_cat <- lm(abv ~ acid : sugar + type, data = cocktails)
 # To change the baseline, convert it to random, and use the levels to set the baseline to carbonated
 # Use the forcats::fct_relevel() function
 lm4 <- lm(abv ~ acid : sugar + fct_relevel(type, "carbonated"), data = cocktails)
 tidy(lm4)
-
-# Measure multicollinearity using the variance inflaction factor (VIF)
-# Values for any varible should not be larger than 10
-car::vif(lm2)
-
-# If the average VIF is larger than 1, it means that multicollineratity is biasing our model
-mean(car::vif(lm2))
-
-# We can also look at the tolerance, that is the reciprocal of VIF, where we are looking for values closer to one (tolerance has the adventage of being between 0 and 1). Values below .1 indicate serious problems, while values below .2 are somewhat troublesome
-1/car::vif(lm2)
-
-# Measuring the independence of residuals
-car::dwt(lm2)
-# It seems like model has some 
-
-
-
 
 ## Model selection
 # You can compare models if you use the same data, and the same approach to get the regression line
@@ -195,6 +195,7 @@ car::dwt(lm2)
 glance(lm1)
 glance(lm2)
 glance(lm3)
+glance(lm4)
 
 # You can also compare the logLik models using the anova() function. It returns an F value, which is significant if difference.
 anova(lm1, lm3)
@@ -242,9 +243,5 @@ results_table_html <-
               digits = 2,
               type = "html")
 
-# You can save the results using the write_lines() function
+# You can save the results using the write_lines() function, and open the html in the browser
 write_lines(results_table_html, "results_table.html")
-
-
-
-
