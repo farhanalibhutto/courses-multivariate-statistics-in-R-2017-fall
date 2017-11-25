@@ -22,7 +22,7 @@ ggplot(df) +
     coord_cartesian(ylim = c(0, 1)) +
     labs(x = "Predictor", y = "Outcome")
 
-# We will again use the titanic dataset to pre
+# We will again use the titanic dataset
 # Make the table printing neat, transform variable names to lowercase
 titanic <- 
     titanic_train %>% 
@@ -70,7 +70,7 @@ surv_fit_table_html <-
 write_lines(surv_fit_table_html, "surv_fit_table.html")
     
 ### Multinomial logistic regression
-# Predict the class of the passanger, given the fare
+# Predict the class of the passanger, given the age
 install.packages("mlogit")
 library(mlogit)
 
@@ -81,7 +81,8 @@ titanic_mlogit <- mlogit.data(titanic, choice = "pclass", shape = "wide")
 pclass_fit <- mlogit(pclass ~ 1 | age, data = titanic_mlogit, reflevel = 2)
 
 summary(pclass_fit)
-# broom functions does not work for multinomial regression :(
+# We cannot use the broom package for the multinomial regression output, so if we want to get the odds ratios, we need to get the exponential of the coefficients
+exp(pclass_fit$coefficients)
 
 ## Poisson regression
 # Use poisson regression to predict a count-type variable (integer values, and totally left-skewed)
@@ -98,7 +99,9 @@ titanic %>%
     geom_histogram(bins = 10)
 
 # Yep, definitely poisson distribution
+# Fitting a poisson regression is not difficult, just use the family = "poisson" parameter
 family_fit_pois <- glm(family ~ age, family = "poisson", data = titanic)
+# Check the results. They look very much like the output of logistic regression, only the model summary statistics are different
 summary(family_fit_pois)
 tidy(family_fit_pois)
 glance(family_fit_pois)
@@ -111,6 +114,8 @@ AER::dispersiontest(family_fit_pois)
 
 # We have to run a negative binomial regression, since dispersion is 1.9 (variance is more than 2x the mean). This parameter was calculated using quasipoisson family.
 family_fit_nb <- MASS::glm.nb(family ~ age, data = titanic)
+
+# Check the results
 summary(family_fit_nb)
 tidy(family_fit_nb)
 glance(family_fit_nb)
