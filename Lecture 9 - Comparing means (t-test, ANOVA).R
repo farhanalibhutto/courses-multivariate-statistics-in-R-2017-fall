@@ -158,6 +158,13 @@ summary(anova_result)
 # But of course, tidy() is better
 tidy(anova_result)
 
+PlantGrowth %>% 
+    group_by(group) %>% 
+    summarise(weight_mean = mean(weight),
+              weight_sd = sd(weight))
+
+sjstats::eta_sq(anova_result)
+
 ## Doing the same using linear regression
 lm_result <- lm(weight ~ group, data = PlantGrowth)
 summary(lm_result)
@@ -165,5 +172,6 @@ tidy(lm_result)
 
 # To get the group effect without the pairwise comparisons, use anova()
 # As you can see, anova can lead to false assumptions because it can answer to a different question
-anova(lm_result)
+
+
 
