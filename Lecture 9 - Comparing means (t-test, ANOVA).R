@@ -1,8 +1,7 @@
 # Lecture 9 - Comparing means: t-test and ANOVA
 library(tidyverse)
 library(broom)
-
-# 
+library(psych)
 
 # Plots for the slides
 # Generate some random data for example plots
@@ -80,9 +79,6 @@ psych::t2r(6.584486, 29)
 # Paired t-test
 # We are using the sleep dataset
 ?sleep
-sleep <- 
-    sleep %>% 
-    as_tibble()
 
 # Plot the data
 ggplot(sleep) +
@@ -99,11 +95,18 @@ paired_result <- t.test(extra ~ group, paired = TRUE, data = sleep)
 sleep %>% 
     group_by(group) %>% 
     summarise(extra_mean = mean(extra),
-              extra_sd = sd(extra))
+              extra_sd = sd(extra),
+              n = n(),
+              extra_se = extra_sd/sqrt(n))
 
-# You can tidy up the results as usual using the broom::tidy()
-paired_result %>% tidy()
-psych::t2d(-4.0621, n = 10)
+# You can tidy up the results as usual using the broom::tidy(), and calculate effect size metrics
+paired_result %>% 
+    tidy() %>% 
+    summarise(d = t2d(t = statistic, n = parameter+1),
+              r = t2r(t = statistic, df = parameter))
+
+
+
 # Independent samples t-test
 # Using the ToothGrowth dataset
 ?ToothGrowth
@@ -136,6 +139,58 @@ psych::t2r(t = 1.9153, df = 58)
 # Get a Cohen's d value
 psych::t2d(t = 1.9153, n = 59)
 
+# ANOVA
+# Creating plots to show how ANOVA works
+anova_df <- 
+    bind_rows(tibble(group = "x", value = rnorm(5, 5, 3)),
+              tibble(group = "y", value = rnorm(5, 10, 2)),
+              tibble(group = "z", value = rnorm(5, 17, 4))) %>% 
+    mutate(id = row_number(),
+           grandmean = mean(value)) %>% 
+    group_by(group) %>% 
+    mutate(groupmean = mean(value),
+           xmin = min(id),
+           xmax = max(id))
+
+# SSt
+anova_df %>% 
+    ggplot() +
+    aes(x = id, y = value) +
+    geom_hline(aes(yintercept = groupmean), size = 1.5) +
+    geom_hline(aes(yintercept = grandmean), linetype = "dotted") +
+    geom_segment(aes(yend = value, xend = id, y = grandmean), linetype = "dashed", color = "blue", size = 1.2) +
+    geom_point(size = 2) +
+    facet_wrap(~group, scales = "free_x") +
+    ggtitle("Difference between the grand mean (baseline model)\nand the observed values", subtitle = "Total variance") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
+
+# SSr
+anova_df %>% 
+    ggplot() +
+    aes(x = id, y = value) +
+    geom_hline(aes(yintercept = groupmean), size = 1.5) +
+    geom_hline(aes(yintercept = grandmean), linetype = "dotted") +
+    geom_segment(aes(yend = value, xend = id, y = groupmean), linetype = "dashed", color = "red", size = 1.2) +
+    geom_point(size = 2) +
+    facet_wrap(~group, scales = "free_x") +
+    ggtitle("Difference between the model (group means)\nand the observed values", subtitle = "Unexplained variance") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
+
+# SSm
+anova_df %>% 
+    ggplot() +
+    aes(x = id, y = value) +
+    geom_hline(aes(yintercept = groupmean), size = 1.5) +
+    geom_hline(aes(yintercept = grandmean), linetype = "dotted") +
+    geom_segment(aes(yend = groupmean, xend = id, y = grandmean), linetype = "dashed", color = "purple", size = 1.2) +
+    geom_point(size = 2) +
+    facet_wrap(~group, scales = "free_x") +
+    ggtitle("Difference between the model (group means)\nand the baseline (grand mean)", subtitle = "Model improvement") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
+
 # Using ANOVA to compare three groups
 # Using the plantgrowth dataset
 ?PlantGrowth
@@ -146,7 +201,6 @@ ggplot(PlantGrowth) +
 ggplot(PlantGrowth) +
     aes(x = group, y = weight, fill = group) +
     geom_boxplot()
-
 
 # Checking hoogeneity of variance
 bartlett.test(weight ~ group, data = PlantGrowth)
@@ -172,6 +226,5 @@ tidy(lm_result)
 
 # To get the group effect without the pairwise comparisons, use anova()
 # As you can see, anova can lead to false assumptions because it can answer to a different question
-
-
+anova(lm_result)
 
