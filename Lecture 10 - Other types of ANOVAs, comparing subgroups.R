@@ -1,0 +1,148 @@
+# Lecture 10: Factorial ANOVA, contrasts, post-hoc tests, ANCOVA, repeated-measures ANOVA
+library(multcomp)
+library(tidyverse)
+library(ggfortify)
+library(stargazer)
+
+# Post-hoc tests for one categorical predictor
+ggplot(PlantGrowth) +
+    aes(x = group, y = weight, fill = group) +
+    geom_boxplot()
+
+anova_model <- aov(weight ~ group, data = PlantGrowth)
+TukeyHSD(anova_model)
+
+# Use another post-hoc test using the multcomp package
+post1 <- multcomp::glht(anova_model, linfct = mcp(group = "Dunnett"), base = 1)
+summary(post1)
+confint(post1)
+
+# Use build in contrasts
+# This one is used for comparing the control condition to treatment conditions
+contrasts(PlantGrowth$group) <- contr.treatment(3, base = 1)
+
+# But maybe it is better use weights to define the contrasts.
+# This will compare the control condition to the treatment conditions
+contrast1 <- c(-2,1,1)
+
+# This compares the two treatment conditions
+contrast2 <- c(0,-1,1)
+
+contrasts(PlantGrowth$group) <- cbind(contrast1, contrast2)
+
+# You can check that the contrasts are now tied to the variable
+PlantGrowth$group
+
+# Let's run the ANOVA
+plant_model <- aov(weight ~ group, data = PlantGrowth)
+
+# Test the significance of the contasts by using summary.lm()
+# this reveals that there is not sig. difference between the treatments and the control conditions, but there is a difference between treatments
+summary.lm(plant_model)
+
+# Using polynomial contrasts (trend analysis)
+contrasts(PlantGrowth$group) <- contr.poly(3)
+plant_poly <- aov(weight ~ group, data = PlantGrowth)
+
+# the quadratic trend is significant, because the category in the middle is smaller than the ones in the center
+summary.lm(plant_poly)
+
+# Practice lm!
+# Use the multcomp::sbp dataset
+?sbp
+lm_null <- lm(sbp ~ 1, data = sbp)
+lm_age <- lm(sbp ~ age, data = sbp)
+lm_sex <- lm(sbp ~ age, data = sbp)
+lm_sex_age <- lm(sbp ~ age + gender, data = sbp)
+lm_int <- lm(sbp ~ age * gender, data = sbp)
+
+# Model comparison
+anova(lm_null, lm_age)
+anova(lm_null, lm_sex)
+anova(lm_age, lm_sex_age)
+anova(lm_sex_age, lm_int)
+
+# The best model is lm_sex_age, that explains 78% of the variability of sbp. 
+glance(lm_sex_age)
+
+stargazer(lm_age, lm_sex_age, lm_int, type = "text")
+stargazer(lm_age, lm_sex_age, lm_int, type = "html") %>% 
+    write_lines("sbp_model.html")
+
+# plot
+ggplot(sbp) +
+    aes(x = age, y = sbp, group = gender, color = gender) +
+    geom_point() +
+    geom_smooth(method = "lm")
+
+# Factorial ANOVA
+# We have several categorical predictors
+ggplot(ToothGrowth) +
+    aes(x = dose, y = len, fill = supp) +
+    geom_boxplot()
+
+ToothGrowth <-
+    ToothGrowth %>% 
+    as_tibble() %>% 
+    mutate(dose = as.factor(dose))
+    
+# Post-hoc tests
+tooth_model <- aov(len ~ dose*supp, data = ToothGrowth)
+summary(tooth_model)
+
+# Investigate post hoc-compaisons for all levels, and tidy-up
+TukeyHSD(tooth_model) %>% tidy()
+
+# Check residual diagnostics
+autoplot(tooth_model, which = 1:4)
+
+
+# Repeated measures ANOVA
+install.packages("ez")
+library(ez)
+
+?mtept
+# ☺Prepare data (tidy up)
+df <- 
+    multcomp::mtept %>% 
+    mutate(id = row_number()) %>% 
+    gather(time, value, -treatment, -id) %>% 
+    mutate(time = str_sub(time, 2)) %>% 
+    as_tibble()
+    
+
+repeated_anova <- ezANOVA(dv = .(value), wid = .(id), within = .(time), between = .(treatment) ,data = df)
+
+summary(repeated_anova)
+
+
+
+# Clutter -----------------------------------------------------------------
+
+
+x <- 1:10
+y <- x^2
+df <- data.frame(x, y)
+
+
+df <- tibble(x = -10:10,
+             linear = x ^ 1,
+             quadratic = x ^ 2,
+             cubic = x ^ 3,
+             quartic = x ^ 4,
+             fifth_order = x ^ 5,
+             sizth_order = x ^ 6) %>% 
+    gather(trend, y, -x) %>% 
+    mutate(trend = fct_reorder(trend, y, fun = max))
+
+
+ggplot(df) +
+    aes(x = x, y = y) +
+    geom_line() +
+    facet_wrap(~trend, scales = "free_y")
+
+df <- x = 
+
+    anova
+
+
