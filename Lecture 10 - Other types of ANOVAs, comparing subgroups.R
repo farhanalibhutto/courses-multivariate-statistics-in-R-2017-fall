@@ -66,7 +66,7 @@ anova(lm_sex_age, lm_int)
 glance(lm_sex_age)
 
 stargazer(lm_age, lm_sex_age, lm_int, type = "text")
-stargazer(lm_age, lm_sex_age, lm_int, type = "html") %>% 
+stargazer(lm_null, lm_age, lm_sex_age, lm_int, type = "html") %>% 
     write_lines("sbp_model.html")
 
 # plot
@@ -98,11 +98,12 @@ autoplot(tooth_model, which = 1:4)
 
 
 # Repeated measures ANOVA
+# We are going to use the ez package for the repeated-measures ANOVA
 install.packages("ez")
 library(ez)
 
 ?mtept
-# ☺Prepare data (tidy up)
+# Prepare data (tidy up)
 df <- 
     multcomp::mtept %>% 
     mutate(id = row_number()) %>% 
@@ -111,38 +112,32 @@ df <-
     as_tibble()
     
 
-repeated_anova <- ezANOVA(dv = .(value), wid = .(id), within = .(time), between = .(treatment) ,data = df)
+ ggplot(df) + 
+        aes(x = time, y = value) + 
+         geom_point() +
+         geom_smooth(method = "lm") +
+         facet_wrap(~id, scales = "free_y")
 
-summary(repeated_anova)
+repeated_anova <-
+    ezANOVA(
+        dv = .(value),
+        wid = .(id),
+        within = .(time),
+        data = df
+    )
 
+repeated_anova
 
+# We can also include between subject factors, so it will be a mixed ANOVA
+mixed_anova <-
+    ezANOVA(
+        dv = .(value),
+        wid = .(id),
+        within = .(time),
+        between = .(treatment) ,
+        data = df,
+        type = 3
+    )
 
-# Clutter -----------------------------------------------------------------
-
-
-x <- 1:10
-y <- x^2
-df <- data.frame(x, y)
-
-
-df <- tibble(x = -10:10,
-             linear = x ^ 1,
-             quadratic = x ^ 2,
-             cubic = x ^ 3,
-             quartic = x ^ 4,
-             fifth_order = x ^ 5,
-             sizth_order = x ^ 6) %>% 
-    gather(trend, y, -x) %>% 
-    mutate(trend = fct_reorder(trend, y, fun = max))
-
-
-ggplot(df) +
-    aes(x = x, y = y) +
-    geom_line() +
-    facet_wrap(~trend, scales = "free_y")
-
-df <- x = 
-
-    anova
-
+mixed_anova
 
