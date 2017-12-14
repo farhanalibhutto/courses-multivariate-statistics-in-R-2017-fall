@@ -71,7 +71,10 @@ cocktails %>%
     aes(y = abv, x = acid) +
     geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "black") +
     geom_segment(aes(xend = acid, yend = .fitted), linetype = "dashed", color = "red", size = 1.2) +
-    geom_point(size = 3)
+    geom_point(size = 3) +
+    ggtitle("Difference between the fitted model\nand the observed values", , subtitle = "Unexplained variance") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
 
 # All variability in the outcome variable (variance)
 # This plots shows the total variance of the outcome variable (summary of the blue lines)
@@ -81,7 +84,10 @@ cocktails %>%
     aes(y = abv, x = acid) +
     geom_hline(aes(yintercept = mean_abv), size = 1.5) +
     geom_segment(aes(xend = acid, yend = mean_abv), linetype = "dashed", color = "blue", size = 1.2) +
-    geom_point(size = 3)
+    geom_point(size = 3) +
+    ggtitle("Difference between the grand mean (baseline model)\nand the observed values", subtitle = "Total variance") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
 
 # Improvement of the fit by using the model, compared to only using the mean
 # This plots shows the total variance of the outcome variable (summary of the blue lines)
@@ -93,7 +99,10 @@ cocktails %>%
     geom_hline(aes(yintercept = mean_abv), size = 1.5) +
     geom_smooth(method = "lm", se = FALSE, size = 1.5, color = "black") +
     geom_segment(aes(xend = acid, yend = mean_abv, y = .fitted), linetype = "dashed", color = "purple", size = 1.2) +
-    geom_point(size = 2)
+    geom_point(size = 2) +
+    ggtitle("Difference between the model\nand the baseline model (grand mean)", subtitle = "Model improvement") +
+    theme(plot.title=element_text(size = 18, face = "bold"),
+          plot.subtitle=element_text(size = 16))
 
 
 
