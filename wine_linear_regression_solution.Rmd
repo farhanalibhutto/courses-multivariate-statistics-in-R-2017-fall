@@ -1,0 +1,171 @@
+---
+title: "Optimal solution for the wine quality data"
+output: html_notebook
+---
+
+# Aim
+The following notebook shows an optimal solution for the final exam task to explore the (simplified) wine dataset, and to build a linear regression model. In the original task I did not specify that you need to find the *best* linear model, so any model would do. However, to find the best model, you need to do something similar to this notebook.
+
+```{r include=FALSE}
+# Check if all required packages are available
+if (!require(tidyverse)) install.packages("tidyverse", dependencies = TRUE)
+if (!require(GGally)) install.packages("GGally", dependencies = TRUE)
+if (!require(car)) install.packages("car", dependencies = TRUE)
+if (!require(broom)) install.packages("broom", dependencies = TRUE)
+
+# Load packages
+library(tidyverse)
+library(GGally)
+library(car)
+library(broom)
+```
+
+# Read data
+```{r}
+wine_df <- read_csv("datasets/wines.csv")
+```
+
+# EDA
+First, we will explore the dataset. We are looking for anomalies in the data (extreme values), and association between variables (to get hints for model building, and explore multicollinearity).  
+
+## Explore outliers
+None of the outliers seem to be so extreme to suspect faulty data.
+```{r}
+gather(wine_df, variable, value) %>% 
+   ggplot() +
+   aes(x = variable, y = value) +
+   geom_boxplot()
+```
+
+## Explore correlations and distributions
+It seems like there is no huge multicollinearity in the data, but all other variables seem to be associated with quality to some extent.
+*Make sure to include all variables (even the outcome variable).*
+```{r message=FALSE, warning=FALSE}
+GGally::ggpairs(wine_df) %>% 
+    print(progress = F) # Suppress the progress bars
+```
+## Building a linear regression model
+### Null model for the worst possible fit (the maximum variance in the outcome variable)  
+
+You could skip this step, because when you check the significance of the full model (or any linear model), the summary already shows the comparison with the null model (the model F and p values). However I think it is best to see how the model selection is done from the beginning.
+*Note that the null model does not have model F and p values, as there is nothing to compare to.*
+
+```{r}
+wine_null <- lm(quality ~ 1, data = wine_df)
+summary(wine_null)
+```
+# Full model with every variable and intercation included  
+We create a model including all variables with main effects and all interactions. We can start with this as we don't have a hypothesis.  
+*Note that if we include everything, none of the terms are significant because of the suppressor effect.*
+
+```{r}
+wine_full <- lm(quality ~ pH * `volatile acidity` * alcohol , data = wine_df)
+summary(wine_full)
+glance(wine_full)
+```
+
+Still, the full model is much better then the null. We should explore which terms (variables) are not needed in the model.
+```{r}
+anova(wine_null, wine_full)
+```
+
+## Model selection  
+Since we are psychologists and have no knowledge of the wine industry, our analysis is going to be exploratory. We are going to use the backward elimination process, removing terms sequentially from the model, starting with the most complex interactions, and all the way down to the main effects. This means 3 levels: 1) the 3-way interaction (pH:volatile acidity:alcohol), 2) the 2-way interactions: pH:volatile acidity, pH:alcohol, volatile acidity:alcohol, and 3) the main effects: pH, volatile acidity, alcohol.  
+
+We are going to compare reduced models to the most plausible model of the previous level.  
+First, our best guess is the full model, because we saw previously that it is much better then the null model. However, the model is not optimal, because none of the terms are significant predictors (because of the suppressor effect). Let's see what happens when we remove the most complex (3-way) interaction.
+```{r}
+wine_best <- wine_full
+wine_i3 <- update(wine_full, .~. - pH:`volatile acidity`:alcohol)
+anova(wine_best, wine_i3)
+
+wine_best <- wine_i3
+```
+It turns out that the 3-way interaction is not needed (does not have a better model fit). Now the best model that we can come up with is the one without the 3-way interaction.
+
+Now we check the 2-way interactions separately.
+```{r}
+wine_i2_1 <- update(wine_best, .~. - pH:`volatile acidity`)
+wine_i2_2 <- update(wine_best, .~. - pH:alcohol)
+wine_i2_3 <- update(wine_best, .~. - `volatile acidity`:alcohol)
+
+anova(wine_best, wine_i2_1)
+anova(wine_best, wine_i2_2)
+anova(wine_best, wine_i2_3)
+
+wine_best <- lm(quality ~ pH + `volatile acidity` + alcohol, data = wine_df)
+```
+
+It turns out that none of the 2-way interactions increase model fit (does not lower AIC or BIC), so keep only the main effects.  
+Last, we also check if removing the main effects would improve the model. 
+It turns out that removing any of the main effects would decrease the the model fit, so we should not remove any of the main effects. So we just keep the last wine_best model as the final. The best model is the one with all main effects, and without any interactions.
+
+```{r}
+wine_m1 <- update(wine_best, .~. - pH)
+wine_m2 <- update(wine_best, .~. - alcohol)
+wine_m3 <- update(wine_best, .~. - `volatile acidity`)
+
+anova(wine_best, wine_m1) # Removing this term would harm the model, so keep it!
+anova(wine_best, wine_m2) # Removing this term would harm the model, so keep it!
+anova(wine_best, wine_m3) # Removing this term would harm the model, so keep it!
+```
+
+## Final model
+Let's check the model fit statistics, R squared, and the predictors. We can also plot the coefficients and their confidence intervals.  
+The final model can explain 32% of the variance in quality.
+```{r}
+summary(wine_best)
+glance(wine_best)
+tidy(wine_best, conf.int = TRUE)
+
+# Show the coefficients on a plot
+GGally::ggcoef(wine_best)
+```
+
+### Standardised coefficients
+
+Let's also create the standardized version of the model to see standardized coefficients. This helps us to compare the contribution of each predictor.  
+The strongest predictor is the alcohol, while volatile acidity is the second strongest (negative), and the therd strongest is pH (negative).
+```{r}
+# Standardize all variables
+wine_std <-
+   wine_df %>% 
+   mutate_all(scale) %>% 
+   lm(quality ~ .+. , data = .)
+
+summary(wine_std)
+GGally::ggcoef(wine_std)
+```
+
+### Plot the predictions
+We can create a plot to show the model prediction vs. the outcome
+```{r}
+augment(wine_best, wine_df) %>% 
+   ggplot() +
+       aes(y = quality, x = .fitted) +
+       geom_point() +
+       geom_smooth(method = "lm")
+```
+
+### Residual diagnostics
+
+The residuals are not that pretty, as the outcome variable is not continuous. We cannot really do much about that. At least there are no serious outliers and influential cases.
+```{r fig.height=9, fig.width=8}
+library(ggfortify)
+# Residual plots show that there are no outliers or infuential cases in the data
+# However the outcome variable is not normally distributed, therefore linear regression might not be the best method to analyze the data
+autoplot(wine_best, which = 1:6)
+```
+
+### Explore assumptions: multicollinearity and autocorrelation.  
+These look fine.
+```{r}
+
+car::vif(wine_best)
+1/car::vif(wine_best)
+car::dwt(wine_best)
+```
+
+       
+       
+       
