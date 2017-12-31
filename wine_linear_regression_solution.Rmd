@@ -54,7 +54,7 @@ You could skip this step, because when you check the significance of the full mo
 wine_null <- lm(quality ~ 1, data = wine_df)
 summary(wine_null)
 ```
-# Full model with every variable and intercation included  
+# Full model with every variable and interactions included  
 We create a model including all variables with main effects and all interactions. We can start with this as we don't have a hypothesis.  
 *Note that if we include everything, none of the terms are significant because of the suppressor effect.*
 
@@ -96,7 +96,7 @@ anova(wine_best, wine_i2_3)
 wine_best <- lm(quality ~ pH + `volatile acidity` + alcohol, data = wine_df)
 ```
 
-It turns out that none of the 2-way interactions increase model fit (does not lower AIC or BIC), so keep only the main effects.  
+It turns out that none of the 2-way interactions increase model fit, so keep only the main effects.  
 Last, we also check if removing the main effects would improve the model. 
 It turns out that removing any of the main effects would decrease the the model fit, so we should not remove any of the main effects. So we just keep the last wine_best model as the final. The best model is the one with all main effects, and without any interactions.
 
@@ -125,7 +125,7 @@ GGally::ggcoef(wine_best)
 ### Standardised coefficients
 
 Let's also create the standardized version of the model to see standardized coefficients. This helps us to compare the contribution of each predictor.  
-The strongest predictor is the alcohol, while volatile acidity is the second strongest (negative), and the therd strongest is pH (negative).
+The strongest predictor is the alcohol, while volatile acidity is the second strongest (negative), and the strongest is pH (negative).
 ```{r}
 # Standardize all variables
 wine_std <-
